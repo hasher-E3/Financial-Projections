@@ -34,7 +34,6 @@ export default function Dashboard({ selectedYear, sheetType }: DashboardProps) {
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const [dpData, setDpData] = useState<number[]>([]);
   const [revenueData, setRevenueData] = useState<number[]>([]);
-  const [sheetData, setSheetData] = useState<any>({});
 
   // --- Fetch Growth Funnel ---
   useEffect(() => {
@@ -49,7 +48,7 @@ export default function Dashboard({ selectedYear, sheetType }: DashboardProps) {
           const values = quarters.map(q => totalNetUsersRow[q]?.value ?? 0);
 
           setGrowthData(values);
-          setTotalUsers(values[values.length - 4] || 0);
+          setTotalUsers(values[values.length - 1] || 0);
         }
       } catch (err) {
         console.error("Error fetching growth funnel data:", err);
@@ -81,30 +80,27 @@ export default function Dashboard({ selectedYear, sheetType }: DashboardProps) {
     fetchDPData();
   }, []);
 
-  // --- Fetch Revenue Data from selectedYear / sheetType ---
+  // --- Fetch Total Revenue for chart ---
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchRevenueData = async () => {
       const yearNum = selectedYear.replace("Year ", "");
       try {
-        const response = await fetch(`http://localhost:8000/api/sheet-data/${sheetType}/${yearNum}`);
-        const apiData: Record<string, Record<string, { value: number; is_calculated: boolean }>> = await response.json();
+        const res = await fetch(`http://localhost:8000/api/sheet-data/revenue/${yearNum}`);
+        const apiData: Record<string, Record<string, { value: number; is_calculated: boolean }>> = await res.json();
 
-        // Extract Total Revenue
         const totalRevenueRow = apiData["Total Revenue"];
         if (totalRevenueRow) {
           const quarters = Object.keys(totalRevenueRow).sort();
           const values = quarters.map(q => totalRevenueRow[q]?.value ?? 0);
           setRevenueData(values);
         }
-
-        setSheetData(apiData);
-      } catch (error) {
-        console.error("Error fetching sheet data:", error);
+      } catch (err) {
+        console.error("Error fetching revenue data:", err);
       }
     };
 
-    fetchData();
-  }, [selectedYear, sheetType]);
+    fetchRevenueData();
+  }, [selectedYear]);
 
   const formatNumber = (num: number) =>
     num?.toLocaleString("en-IN", { maximumFractionDigits: 0 });
